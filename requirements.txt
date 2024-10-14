@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+chromadb
+langchain
+langchain_chroma==0.1.4
+langchain-community
+python-dotenv
+transformers
+sentence-transformers
+torch
+pypdf==5.0.1
+psutil==6.0.0
+python-multipart==0.0.12
