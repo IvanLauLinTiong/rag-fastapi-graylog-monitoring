@@ -13,9 +13,11 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from logger import logger
 from pathlib import Path
 from typing import List
-import os
+# import os
 import psutil
 import shutil
+import time
+
 
 
 load_dotenv(find_dotenv())
@@ -24,11 +26,13 @@ app = FastAPI()
 CHROMA_PATH= "chroma_db"
 MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
-model = HuggingFacePipeline.from_model_id(
-    model_id=MODEL_ID,
-    task="text-generation",
-    pipeline_kwargs={"max_new_tokens": 256},
-)
+# model = HuggingFacePipeline.from_model_id(
+#     model_id=MODEL_ID,
+#     task="text-generation",
+#     pipeline_kwargs={"max_new_tokens": 256},
+# )
+
+model = ""
 
 # model = HuggingFaceEndpoint(
 #     repo_id=model_id,
@@ -47,16 +51,20 @@ retriever = vector_store.as_retriever(search_kwargs={"k": 2})
 # --- Middlewares ---
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
-    # logger.info(f"Received request: {request.method} {request.url}")
 
-    print(f"Received request: {request.method} {request.url}")
+    logger.info(f"Incoming request from IP {request.client.host}: {request.method} {request.url}")
+
+
+    start = time.time()
     response = await call_next(request)
-    print(f"Response status: {response.status_code}")
+    elapsed = time.time() - start
 
-    s = f"REQUEST_DETAILS: {response.status_code} , {request.client.host}, {request.url}}"
-    print(s)
+    print(f"Response status: {response.status_code}\nAPI response time: {elapsed}")
 
-    # logger.info(f"Response status: {response.status_code}")
+    logger.info(f"Completed request in {elapsed:.2f} seconds, status: {response.status_code}")
+
+    response.headers["X-Response-Time"] = str(elapsed)
+
     return response
 
 # ----- APIs ---
