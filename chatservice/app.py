@@ -16,6 +16,7 @@ from utils import get_system_metrics
 import os
 import shutil
 import time
+import uuid
 
 
 
@@ -48,20 +49,33 @@ vector_store = Chroma(
 retriever = vector_store.as_retriever(search_kwargs={"k": 2})
 
 
-# @app.middleware("http")
+@app.middleware("http")
 async def log_requests(request: Request, call_next):
 
-    logger.info(f"Incoming request from IP {request.client.host}: {request.method} {request.url}")
+    request_id = str(uuid.uuid4())
+
+    logger.info("Incoming request", extra={
+        "request_id": request_id,
+        "method": request.method,
+        "url": str(request.url),
+        "client": request.client.host
+    })
 
     start = time.time()
     response = await call_next(request)
-    elapsed = time.time() - start
+    response_time = time.time() - start
 
-    print(f"Response status: {response.status_code}\nAPI response time: {elapsed}")
+    logger.info("Request processed", extra={
+            "request_id": request_id,
+            "method": request.method,
+            "url": str(request.url),
+            "client": request.client.host,
+            "response_time": f"{response_time:.4f} seconds",
+            "status_code": response.status_code
+        })
 
-    logger.info(f"Completed request in {elapsed:.2f} seconds, status: {response.status_code}")
-
-    response.headers["X-Response-Time"] = str(elapsed)
+    response.headers["X-Request-Id"] = request_id
+    response.headers["X-Response-Time"] = str(response_time)
 
     return response
 
@@ -73,8 +87,9 @@ async def health():
 
 @app.post("/generate")
 async def generate_text(query: str):
-    template = """You are a Q&A assistant. Your goal is to answer the question below.
+    template = """You are a helpful AI assistant and your goal is to answer the question below.
     If you don't know the answer, say you don't know. Use three sentences maximum and keep the answer concise.
+
     Question: {question}
 
     Answer:
