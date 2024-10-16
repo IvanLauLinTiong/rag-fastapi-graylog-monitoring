@@ -6,14 +6,14 @@ from langchain.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.runnables import RunnablePassthrough
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_huggingface import HuggingFacePipeline #, HuggingFaceEndpoint
+from langchain_huggingface import HuggingFacePipeline, HuggingFaceEndpoint
 from langchain_chroma import Chroma
 from langchain_community.document_loaders import PyPDFDirectoryLoader
 
 from logger import logger
 from pathlib import Path
 from typing import List
-# import os
+import os
 import psutil
 import shutil
 import time
@@ -180,12 +180,6 @@ async def system_metrics():
             "total_cpu_usage": psutil.cpu_percent(interval=1)
         }
 
-    # cpu_usage = psutil.cpu_percent(interval=1)
-    # memory_info = psutil.virtual_memory()
-    # return {
-    #     "cpu_usage": cpu_usage,
-    #     "memory_usage": memory_info.percent
-    # }
     return {
         "memory_info": get_memory_info(),
         "cpu_info": get_cpu_info()
