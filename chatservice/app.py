@@ -13,32 +13,51 @@ from langchain_community.document_loaders import PyPDFDirectoryLoader
 from logger import logger
 from pathlib import Path
 from typing import List
+from utils import get_system_metrics
 import os
-import psutil
 import shutil
 import time
 
 
 
 load_dotenv(find_dotenv())
+
+
+# async def send_metrics_to_graylog_periodically(interval: int):
+#     while True:
+#         metrics = get_system_metrics()
+#         logger.info("System Metrics", extra=metrics)
+#         time.sleep(interval)
+
+# background_tasks = BackgroundTasks()
+
+# @asynccontextmanager
+# async def lifespan(app: FastAPI):
+#     background_tasks.add_task(send_metrics_to_graylog_periodically, 60)
+#     await background_tasks()
+#     yield
+
+
+# app = FastAPI(lifespan=lifespan)
+
 app = FastAPI()
 
 CHROMA_PATH= "chroma_db"
 MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 
-# model = HuggingFacePipeline.from_model_id(
-#     model_id=MODEL_ID,
-#     task="text-generation",
-#     pipeline_kwargs={"max_new_tokens": 256},
-# )
+# # model = HuggingFacePipeline.from_model_id(
+# #     model_id=MODEL_ID,
+# #     task="text-generation",
+# #     pipeline_kwargs={"max_new_tokens": 256},
+# # )
 
-model = ""
+# model = ""
 
-# model = HuggingFaceEndpoint(
-#     repo_id=model_id,
-#     max_new_tokens=512,
-#     huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
-# )
+model = HuggingFaceEndpoint(
+    repo_id=MODEL_ID,
+    max_new_tokens=512,
+    huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
+)
 
 vector_store = Chroma(
     persist_directory=CHROMA_PATH,
@@ -53,7 +72,6 @@ retriever = vector_store.as_retriever(search_kwargs={"k": 2})
 async def log_requests(request: Request, call_next):
 
     logger.info(f"Incoming request from IP {request.client.host}: {request.method} {request.url}")
-
 
     start = time.time()
     response = await call_next(request)
@@ -92,21 +110,6 @@ async def generate_text(query: str):
 
 @app.post("/generate-text-with-context")
 async def generate_text_with_context(query: str):
-    # Search the DB.
-    # results = vector_store.similarity_search_with_relevance_scores(query, k=2)
-    # print(f"{results=}")
-
-    # if len(results) == 0 or results[0][1] < 0.2:
-    #     print(f"Unable to find matching context. Please upload your files to provide context.")
-    #     return
-
-    # context = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    # prompt = prompt_template.format(context=context, question=query)
-    # print(prompt)
-
-    # response_text = model.invoke(prompt)
-    # print(response_text)
-
     template = """You are a Q&A assistant. Your goal is to answer the question based on the provided context and rules below:
     1. If you don't know the answer, don't try to make up an answer. Just say "I can't find the answer for the context provided".
     2. If you find the answer, write the answer in a concise way.
@@ -114,6 +117,8 @@ async def generate_text_with_context(query: str):
     Context: {context}
 
     Question: {question}
+
+    Answer:
 """
 
     prompt = ChatPromptTemplate.from_template(template)
@@ -163,24 +168,6 @@ async def create_database(files: List[UploadFile] = File(...)):
 
 @app.get("/system-metrics")
 async def system_metrics():
-    def get_memory_info():
-        return {
-            "total_memory": psutil.virtual_memory().total / (1024.0 ** 3),
-            "available_memory": psutil.virtual_memory().available / (1024.0 ** 3),
-            "used_memory": psutil.virtual_memory().used / (1024.0 ** 3),
-            "memory_percentage": psutil.virtual_memory().percent
-        }
-
-    def get_cpu_info():
-        return {
-            "physical_cores": psutil.cpu_count(logical=False),
-            "total_cores": psutil.cpu_count(logical=True),
-            "processor_speed": psutil.cpu_freq().current,
-            "cpu_usage_per_core": dict(enumerate(psutil.cpu_percent(percpu=True, interval=1))),
-            "total_cpu_usage": psutil.cpu_percent(interval=1)
-        }
-
-    return {
-        "memory_info": get_memory_info(),
-        "cpu_info": get_cpu_info()
-    }
+    metrics = get_system_metrics()
+    logger.info("System Metrics", extra=metrics)
+    return metrics
