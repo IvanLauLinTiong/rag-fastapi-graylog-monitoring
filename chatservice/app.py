@@ -2,9 +2,8 @@ from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from dotenv import find_dotenv, load_dotenv
 from get_embedding import get_embedding
 
-from langchain.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
+from langchain.chains.retrieval_qa.base import RetrievalQA
+from langchain.prompts import PromptTemplate
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_huggingface import HuggingFacePipeline, HuggingFaceEndpoint
 from langchain_chroma import Chroma
@@ -21,29 +20,10 @@ import time
 
 
 load_dotenv(find_dotenv())
-
-
-# async def send_metrics_to_graylog_periodically(interval: int):
-#     while True:
-#         metrics = get_system_metrics()
-#         logger.info("System Metrics", extra=metrics)
-#         time.sleep(interval)
-
-# background_tasks = BackgroundTasks()
-
-# @asynccontextmanager
-# async def lifespan(app: FastAPI):
-#     background_tasks.add_task(send_metrics_to_graylog_periodically, 60)
-#     await background_tasks()
-#     yield
-
-
-# app = FastAPI(lifespan=lifespan)
-
 app = FastAPI()
 
 CHROMA_PATH= "chroma_db"
-MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+MODEL_ID = "microsoft/Phi-3-mini-4k-instruct"
 
 # # model = HuggingFacePipeline.from_model_id(
 # #     model_id=MODEL_ID,
@@ -51,11 +31,12 @@ MODEL_ID = "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 # #     pipeline_kwargs={"max_new_tokens": 256},
 # # )
 
-# model = ""
 
 model = HuggingFaceEndpoint(
     repo_id=MODEL_ID,
-    max_new_tokens=512,
+    max_new_tokens=256,
+    temperature=0.001,
+    stop_sequences=["\n\n"],
     huggingfacehub_api_token=os.getenv("HUGGINGFACEHUB_API_TOKEN")
 )
 
@@ -67,8 +48,7 @@ vector_store = Chroma(
 retriever = vector_store.as_retriever(search_kwargs={"k": 2})
 
 
-# --- Middlewares ---
-@app.middleware("http")
+# @app.middleware("http")
 async def log_requests(request: Request, call_next):
 
     logger.info(f"Incoming request from IP {request.client.host}: {request.method} {request.url}")
@@ -85,7 +65,7 @@ async def log_requests(request: Request, call_next):
 
     return response
 
-# ----- APIs ---
+
 @app.get("/health")
 async def health():
     return {"status": "OK"}
@@ -93,26 +73,26 @@ async def health():
 
 @app.post("/generate")
 async def generate_text(query: str):
-    template = """Question: {question}
+    template = """You are a Q&A assistant. Your goal is to answer the question below.
+    If you don't know the answer, say you don't know. Use three sentences maximum and keep the answer concise.
+    Question: {question}
 
-    Answer: """
-    prompt = ChatPromptTemplate.from_template(template)
+    Answer:
+"""
+
+    prompt = PromptTemplate(template=template, input_variables=["question"])
 
     chain = prompt | model
 
     response_text = chain.invoke({"question": query})
 
-    formatted_response = f"Response:\n{response_text}"
-    print(formatted_response)
-
-    return formatted_response
+    return response_text
 
 
 @app.post("/generate-text-with-context")
 async def generate_text_with_context(query: str):
-    template = """You are a Q&A assistant. Your goal is to answer the question based on the provided context and rules below:
-    1. If you don't know the answer, don't try to make up an answer. Just say "I can't find the answer for the context provided".
-    2. If you find the answer, write the answer in a concise way.
+    template = """You are a Q&A assistant. Your goal is to answer the question based on the provided context.
+    If you don't know the answer, say you don't know. Use three sentences maximum and keep the answer concise.
 
     Context: {context}
 
@@ -121,16 +101,19 @@ async def generate_text_with_context(query: str):
     Answer:
 """
 
-    prompt = ChatPromptTemplate.from_template(template)
+    prompt = PromptTemplate(template=template, input_variables=["context", "question"])
 
-    chain = (
-        {"context": retriever, "question": RunnablePassthrough()}
-        | prompt
-        | model
-        | StrOutputParser()
-    )
 
-    response_text = chain.invoke(query)
+    chain = RetrievalQA.from_chain_type(
+        llm=model,
+        chain_type="stuff",
+        retriever=retriever,
+        # return_source_documents=True,
+        chain_type_kwargs={"prompt": prompt}
+)
+
+    result = chain.invoke({"query": query})
+    response_text = result["result"]
     print(response_text)
 
     return response_text
@@ -165,6 +148,7 @@ async def create_database(files: List[UploadFile] = File(...)):
     finally:
         # Remove the temp folder
         shutil.rmtree(TEMPFILE_FOLDER)
+
 
 @app.get("/system-metrics")
 async def system_metrics():
