@@ -56,13 +56,7 @@ services:
       # Password: "admin"
       GRAYLOG_ROOT_PASSWORD_SHA2: "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
       GRAYLOG_HTTP_EXTERNAL_URI: "http://127.0.0.1:9000/"
-      GRAYLOG_TRANSPORT_EMAIL_ENABLED: "true"
-      GRAYLOG_TRANSPORT_EMAIL_HOSTNAME: smtp
-      GRAYLOG_TRANSPORT_EMAIL_PORT: 25
-      GRAYLOG_TRANSPORT_EMAIL_USE_AUTH: "false"
-      GRAYLOG_TRANSPORT_EMAIL_USE_TLS: "false"
-      GRAYLOG_TRANSPORT_EMAIL_USE_SSL: "false"
-      GRAYLOG_CONTENT_PACKS_AUTO_INSTALL: "gelf-udp-input.json"
+      GRAYLOG_CONTENT_PACKS_AUTO_INSTALL: "rag-graylog-plugin.json"
       GRAYLOG_CONTENT_PACKS_LOADER_ENABLED: "true"
       GRAYLOG_CONTENT_PACKS_DIR: "data/contentpacks"
     ports:
@@ -90,7 +84,7 @@ services:
       - "graylog_config:/usr/share/graylog/data/config"
       - "graylog_journal:/usr/share/graylog/data/journal"
       - "./graylog.conf:/usr/share/graylog/data/config/graylog.conf"
-      - "./gelf-udp-input.json:/usr/share/graylog/data/contentpacks/gelf-udp-input.json"
+      - "./rag-graylog-plugin.json:/usr/share/graylog/data/contentpacks/rag-graylog-plugin.json"
 
 networks:
   graylog:

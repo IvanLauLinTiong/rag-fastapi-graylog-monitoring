@@ -1,0 +1,265 @@
+{
+    "v": 1,
+    "id": "dd887352-0620-4400-8d6f-34aa2d34d130",
+    "rev": 1,
+    "name": "RAG Graylog Plugin",
+    "summary": "RAG's  graylog plugin for Input, event and notification",
+    "description": "",
+    "vendor": "ivan",
+    "url": "",
+    "parameters": [],
+    "entities": [
+      {
+        "v": "1",
+        "type": {
+          "name": "input",
+          "version": "1"
+        },
+        "id": "a1fee4c4-6153-4d4c-97cd-c07649a008c1",
+        "data": {
+          "title": {
+            "@type": "string",
+            "@value": "RAG GELF UDP Input"
+          },
+          "configuration": {
+            "recv_buffer_size": {
+              "@type": "integer",
+              "@value": 262144
+            },
+            "port": {
+              "@type": "integer",
+              "@value": 12201
+            },
+            "number_worker_threads": {
+              "@type": "integer",
+              "@value": 16
+            },
+            "charset_name": {
+              "@type": "string",
+              "@value": "UTF-8"
+            },
+            "bind_address": {
+              "@type": "string",
+              "@value": "0.0.0.0"
+            },
+            "decompress_size_limit": {
+              "@type": "integer",
+              "@value": 8388608
+            }
+          },
+          "static_fields": {},
+          "type": {
+            "@type": "string",
+            "@value": "org.graylog2.inputs.gelf.udp.GELFUDPInput"
+          },
+          "global": {
+            "@type": "boolean",
+            "@value": false
+          },
+          "extractors": []
+        },
+        "constraints": [
+          {
+            "type": "server-version",
+            "version": ">=6.0.7+4779d72"
+          }
+        ]
+      },
+      {
+        "v": "1",
+        "type": {
+          "name": "notification",
+          "version": "1"
+        },
+        "id": "d906299e-baf2-4160-8239-755b79996a67",
+        "data": {
+          "title": {
+            "@type": "string",
+            "@value": "Slow API Response Notification "
+          },
+          "description": {
+            "@type": "string",
+            "@value": ""
+          },
+          "config": {
+            "sender_lut_key": {
+              "@type": "string",
+              "@value": ""
+            },
+            "lookup_recipient_emails": {
+              "@type": "boolean",
+              "@value": false
+            },
+            "html_body_template": {
+              "@type": "string",
+              "@value": "<table width=\"100%\" border=\"0\" cellpadding=\"10\" cellspacing=\"0\" style=\"background-color:#f9f9f9;border:none;line-height:1.2\"><tbody>\n<tr style=\"line-height:1.5\"><th colspan=\"2\" style=\"background-color:#e6e6e6\">Event Definition</th></tr>\n<tr><td width=\"200px\">Title</td><td>${event_definition_title}</td></tr>\n<tr><td>Description</td><td>${event_definition_description}</td></tr>\n<tr><td>Type</td><td>${event_definition_type}</td></tr>\n</tbody></table>\n<br /><table width=\"100%\" border=\"0\" cellpadding=\"10\" cellspacing=\"0\" style=\"background-color:#f9f9f9;border:none;line-height:1.2\"><tbody>\n<tr><th colspan=\"2\" style=\"background-color:#e6e6e6;line-height:1.5\">Event</th></tr>\n<tr><td>Alert Replay</td><td>${http_external_uri}alerts/${event.id}/replay-search</td></tr>\n<tr><td width=\"200px\">Timestamp</td><td>${event.timestamp}</td></tr>\n<tr><td>Message</td><td>${event.message}</td></tr>\n<tr><td>Source</td><td>${event.source}</td></tr>\n<tr><td>Key</td><td>${event.key}</td></tr>\n<tr><td>Priority</td><td>${event.priority}</td></tr>\n<tr><td>Alert</td><td>${event.alert}</td></tr>\n<tr><td>Timestamp Processing</td><td>${event.timestamp}</td></tr>\n<tr><td>Timerange Start</td><td>${event.timerange_start}</td></tr>\n<tr><td>Timerange End</td><td>${event.timerange_end}</td></tr>\n<tr><td>Source Streams</td><td>${event.source_streams}</td></tr>\n<tr><td>Fields</td><td><ul style=\"list-style-type:square;\">${foreach event.fields field}<li>${field.key}:${field.value}</li>${end}<ul></td></tr>\n</tbody></table>\n${if backlog}\n<br /><table width=\"100%\" border=\"0\" cellpadding=\"10\" cellspacing=\"0\" style=\"background-color:#f9f9f9;border:none;line-height:1.2\"><tbody>\n<tr><th style=\"background-color:#e6e6e6;line-height:1.5\">Backlog (Last messages accounting for this alert)</th></tr>\n${foreach backlog message}\n<tr><td>${message}</td></tr>\n${end}\n</tbody></table>\n${end}\n"
+            },
+            "recipients_lut_name": {
+              "@type": "string",
+              "@value": ""
+            },
+            "replyTo": {
+              "@type": "string",
+              "@value": ""
+            },
+            "recipients_lut_key": {
+              "@type": "string",
+              "@value": ""
+            },
+            "sender_lut_name": {
+              "@type": "string",
+              "@value": ""
+            },
+            "subject": {
+              "@type": "string",
+              "@value": "Graylog event notification: ${event_definition_title}"
+            },
+            "reply_to_lut_name": {
+              "@type": "string",
+              "@value": ""
+            },
+            "user_recipients": [],
+            "lookup_reply_to_email": {
+              "@type": "boolean",
+              "@value": false
+            },
+            "sender": {
+              "@type": "string",
+              "@value": "graylog@example.com"
+            },
+            "body_template": {
+              "@type": "string",
+              "@value": "--- [Event Definition] ---------------------------\nTitle:       ${event_definition_title}\nDescription: ${event_definition_description}\nType:        ${event_definition_type}\n--- [Event] --------------------------------------\nAlert Replay:         ${http_external_uri}alerts/${event.id}/replay-search\nTimestamp:            ${event.timestamp}\nMessage:              ${event.message}\nSource:               ${event.source}\nKey:                  ${event.key}\nPriority:             ${event.priority}\nAlert:                ${event.alert}\nTimestamp Processing: ${event.timestamp}\nTimerange Start:      ${event.timerange_start}\nTimerange End:        ${event.timerange_end}\nFields:\n${foreach event.fields field}  ${field.key}: ${field.value}\n${end}\n${if backlog}\n--- [Backlog] ------------------------------------\nLast messages accounting for this alert:\n${foreach backlog message}\n${message}\n${end}\n${end}\n"
+            },
+            "lookup_sender_email": {
+              "@type": "boolean",
+              "@value": false
+            },
+            "type": "email-notification-v1",
+            "reply_to_lut_key": {
+              "@type": "string",
+              "@value": ""
+            },
+            "email_recipients": [
+              "ivanlau91@hotmail.com"
+            ],
+            "time_zone": {
+              "@type": "string",
+              "@value": "Asia/Singapore"
+            }
+          }
+        },
+        "constraints": [
+          {
+            "type": "server-version",
+            "version": ">=6.0.7+4779d72"
+          }
+        ]
+      },
+      {
+        "v": "1",
+        "type": {
+          "name": "event_definition",
+          "version": "1"
+        },
+        "id": "c64f8ef2-0375-49bd-a614-4865ed2affc6",
+        "data": {
+          "field_spec": {},
+          "config": {
+            "search_within_ms": 300000,
+            "query": {
+              "@type": "string",
+              "@value": "response_time:>2"
+            },
+            "streams": [
+              "729e2d92-309d-41fd-88ca-3cf72751e5e1"
+            ],
+            "execute_every_ms": 300000,
+            "event_limit": 100,
+            "group_by": [],
+            "series": [],
+            "conditions": {
+              "expression": null
+            },
+            "type": "aggregation-v1",
+            "filters": []
+          },
+          "priority": {
+            "@type": "integer",
+            "@value": 3
+          },
+          "notifications": [
+            {
+              "notification_id": {
+                "@type": "string",
+                "@value": "d906299e-baf2-4160-8239-755b79996a67"
+              },
+              "notification_parameters": null
+            }
+          ],
+          "remediation_steps": null,
+          "matched_at": null,
+          "_scope": {
+            "@type": "string",
+            "@value": "DEFAULT"
+          },
+          "notification_settings": {
+            "grace_period_ms": 300000,
+            "backlog_size": 0
+          },
+          "updated_at": "2024-10-17T09:00:14.560Z",
+          "title": {
+            "@type": "string",
+            "@value": "Slow API Response Event"
+          },
+          "is_scheduled": {
+            "@type": "boolean",
+            "@value": true
+          },
+          "key_spec": [],
+          "storage": [
+            {
+              "type": "persist-to-streams-v1",
+              "streams": [
+                "000000000000000000000002"
+              ]
+            }
+          ],
+          "alert": {
+            "@type": "boolean",
+            "@value": true
+          },
+          "description": {
+            "@type": "string",
+            "@value": "This event is triggered when the response time of any API requested is more than  2 seconds"
+          }
+        },
+        "constraints": [
+          {
+            "type": "server-version",
+            "version": ">=6.0.7+4779d72"
+          }
+        ]
+      },
+      {
+        "v": "1",
+        "type": {
+          "name": "stream_title",
+          "version": "1"
+        },
+        "id": "729e2d92-309d-41fd-88ca-3cf72751e5e1",
+        "data": {
+          "title": {
+            "@type": "string",
+            "@value": "Default Stream"
+          }
+        },
+        "constraints": [
+          {
+            "type": "server-version",
+            "version": ">=6.0.7+4779d72"
+          }
+        ]
+      }
+    ]
+  }

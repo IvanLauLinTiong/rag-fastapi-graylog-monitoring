@@ -1,4 +1,5 @@
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi.responses import JSONResponse
 from dotenv import find_dotenv, load_dotenv
 from get_embedding import get_embedding
 
@@ -49,33 +50,48 @@ vector_store = Chroma(
 retriever = vector_store.as_retriever(search_kwargs={"k": 2})
 
 
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, e: Exception):
+
+    logger.error("Error", f"Unhandled exception: {str(e)}")
+
+    return JSONResponse(status_code=500, content={"message": str(e)})
+
+
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
 
-    request_id = str(uuid.uuid4())
 
-    logger.info("Incoming request", extra={
-        "request_id": request_id,
-        "method": request.method,
-        "url": str(request.url),
-        "client": request.client.host
-    })
+    if request.client.host in ("127.0.0.1", "localhost"):
+        #  from localhost healthcheck request
+        response = await call_next(request)
 
-    start = time.time()
-    response = await call_next(request)
-    response_time = time.time() - start
+    else:
+        # client API request
+        request_id = str(uuid.uuid4())
 
-    logger.info("Request processed", extra={
+        logger.info(f"Incoming request {request.method} {str(request.url)}", extra={
             "request_id": request_id,
             "method": request.method,
             "url": str(request.url),
-            "client": request.client.host,
-            "response_time": f"{response_time:.4f} seconds",
-            "status_code": response.status_code
+            "client": request.client.host
         })
 
-    response.headers["X-Request-Id"] = request_id
-    response.headers["X-Response-Time"] = str(response_time)
+        start = time.time()
+        response = await call_next(request)
+        response_time = time.time() - start
+
+        logger.info(f"Request processed {request.method} {str(request.url)}", extra={
+                "request_id": request_id,
+                "method": request.method,
+                "url": str(request.url),
+                "client": request.client.host,
+                "response_time": f"{response_time:.4f} seconds",
+                "status_code": response.status_code
+            })
+
+        response.headers["X-Request-Id"] = request_id
+        response.headers["X-Response-Time"] = str(response_time)
 
     return response
 
@@ -118,12 +134,10 @@ async def generate_text_with_context(query: str):
 
     prompt = PromptTemplate(template=template, input_variables=["context", "question"])
 
-
     chain = RetrievalQA.from_chain_type(
         llm=model,
         chain_type="stuff",
         retriever=retriever,
-        # return_source_documents=True,
         chain_type_kwargs={"prompt": prompt}
 )
 
