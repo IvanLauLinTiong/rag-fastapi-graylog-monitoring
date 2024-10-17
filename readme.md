@@ -82,8 +82,8 @@ The pipeline follows these steps to provide responses to your questions and send
 
 1. Clone the repo:
 ```
-git clone https://github.com/yourusername/fastapi-rag-graylog.git
-cd fastapi-rag-graylog
+git clone https://github.com/IvanLauLinTiong/rag-fastapi-graylog-monitoring
+cd rag-fastapi-graylog-monitoring
 
 ```
 
