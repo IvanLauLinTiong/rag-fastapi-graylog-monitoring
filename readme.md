@@ -113,6 +113,7 @@ response time that greater than 2 seconds:
 <br />
 ![graylognotification](./assets/graylog_notification.PNG)
 
+
 6. Run command below to stop all the running services:
 ```
 docker compose down --remove-orphans
