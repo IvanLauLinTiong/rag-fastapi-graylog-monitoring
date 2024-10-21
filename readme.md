@@ -108,6 +108,8 @@ response time that greater than 2 seconds:
 
 
 - configure the alert notification for Slow API response event. Currently the event condition is searching within the last 5 minutes of log messages and run every 5 minutes and the notification is sent via email:
+<br />
+<br />
 ![graylogevent](./assets/graylog_event.PNG)
 <br />
 <br />
